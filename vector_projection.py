@@ -62,7 +62,7 @@ class App(tk.Tk):
     def refresh(self):
         self.updateLine(self.projection_line)
         self.updateLine(self.line1)
-        self.line1_projection.setVector(*App.projectVector(self.line1, self.projection_line))
+        self.line1_projection.setPoints(*App.projectPoint(self.line1.x, self.line1.y, self.projection_line), *App.projectPoint(self.line1.x + self.line1.dx, self.line1.y + self.line1.dy, self.projection_line))
         self.updateLine(self.line1_projection)
         self.line1_1.setPoints(self.line1.x, self.line1.y, self.line1_projection.x, self.line1_projection.y)
         self.updateLine(self.line1_1)
@@ -75,20 +75,13 @@ class App(tk.Tk):
         self.after(15, self.refresh)
 
     @staticmethod
-    def projectVector(v, line):
+    def projectPoint(x, y, line):
         if not isinstance(line, Line):
             raise Exception('line argument expected Line object')
-        if not isinstance(v, Line):
-            raise Exception('v argument expected Line object')
-        # project starting point
-        c = ((v.x - line.x) * line.dx + (v.y - line.y) * line.dy) / (line.dx ** 2 + line.dy ** 2)
+        c = ((x - line.x) * line.dx + (y - line.y) * line.dy) / (line.dx ** 2 + line.dy ** 2)
         x = line.dx * c + line.x
         y = line.dy * c + line.y
-        # project direction vector
-        c = (v.dx * line.dx + v.dy * line.dy) / (line.dx ** 2 + line.dy ** 2)
-        dx = line.dx * c
-        dy = line.dy * c
-        return (x, y, dx, dy)
+        return (x, y)
 
     def updateLine(self, line):
         if not isinstance(line, Line):
