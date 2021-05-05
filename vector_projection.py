@@ -45,7 +45,7 @@ class App(tk.Tk):
 
     def lButtonDown(self, event):
         # self.line1.setStart(event.x, event.y)
-        self.square.p1 = (event.x, event.y)
+        self.square.points[0] = (event.x, event.y)
 
     def rButtonDown(self, event):
         global p_line_x
@@ -56,12 +56,12 @@ class App(tk.Tk):
     def mouseMove(self, event):
         if event.state & 0x0100:
             # self.line1.setEnd(event.x, event.y)
-            (x, y) = self.square.p1
+            (x, y) = self.square.points[0]
             dx = event.x - x
             dy = event.y - y
-            self.square.p2 = (x + dx, y)
-            self.square.p3 = (x + dx, y + dy)
-            self.square.p4 = (x, y + dy)
+            self.square.points[1] = (x + dx, y)
+            self.square.points[2] = (x + dx, y + dy)
+            self.square.points[3] = (x, y + dy)
 
         if event.state & 0x200:
             theta = math.atan2(event.x - p_line_x, event.y - p_line_y)
@@ -92,7 +92,7 @@ class App(tk.Tk):
         c = ((x - line.x) * line.dx + (y - line.y) * line.dy) / (line.dx ** 2 + line.dy ** 2)
         x = line.dx * c + line.x
         y = line.dy * c + line.y
-        return (int(x), int(y))
+        return (x, y)
 
     def updateLine(self, line):
         if not isinstance(line, Line):
@@ -100,7 +100,11 @@ class App(tk.Tk):
         self.canvas.coords(line.id, line.x, line.y, line.x + line.dx, line.y + line.dy)
 
     def updateSquare(self, square):
-        self.canvas.coords(square.id, *square.p1, *square.p2, *square.p3, *square.p4)
+        unpacked_points = []
+        for p in square.points:
+            unpacked_points.append(p[0])
+            unpacked_points.append(p[1])
+        self.canvas.coords(square.id, *unpacked_points)
 
 def getLineLength(x, y, x2, y2):
     return int(math.sqrt((x - x2) ** 2 + (y - y2) ** 2))
@@ -134,56 +138,36 @@ class Line(object):
 
 class Square(object):
     def __init__(self, root, border, **kwargs):
-        self.p1 = (0, 0)
-        self.p2 = (0, 0)
-        self.p3 = (0, 0)
-        self.p4 = (0, 0)
+        self.points = []
+        self.points.append((0, 0))
+        self.points.append((0, 0))
+        self.points.append((0, 0))
+        self.points.append((0, 0))
         self.root = root
-        self.id = root.canvas.create_polygon(*self.p1, *self.p2, *self.p3, *self.p4, outline=border, **kwargs)
+        self.id = root.canvas.create_polygon(*self.points, outline=border, **kwargs)
         self.projection_id = root.canvas.create_line(0, 0, 0, 0, fill='red', arrow='both', **kwargs)
         self.line1 = root.canvas.create_line(0, 0, 0, 0, fill='white', dash=5)
         self.line2 = root.canvas.create_line(0, 0, 0, 0, fill='white', dash=5)
     def project(self, line):
-        min_np = self.p1
-        min_point = App.projectPoint(*self.p1, line)
+        min_np = self.points[0]
+        min_point = App.projectPoint(*min_np, line)
         min_dist = getLineLength(*min_point, line.x, line.y)
         
         max_np = min_np
         max_point = min_point
         max_dist = min_dist
 
-        pp2 = App.projectPoint(*self.p2, line)
-        pp2_dist = getLineLength(*pp2, line.x, line.y)
-        if pp2_dist < min_dist:
-            min_np = self.p2
-            min_point = pp2
-            min_dist = pp2_dist
-        elif pp2_dist > max_dist:
-            max_np = self.p2
-            max_point = pp2
-            max_dist = pp2_dist
-
-        pp3 = App.projectPoint(*self.p3, line)
-        pp3_dist = getLineLength(*pp3, line.x, line.y)
-        if pp3_dist < min_dist:
-            min_np = self.p3
-            min_point = pp3
-            min_dist = pp3_dist
-        elif pp3_dist > max_dist:
-            max_np = self.p3
-            max_point = pp3
-            max_dist = pp3_dist
-
-        pp4 = App.projectPoint(*self.p4, line)
-        pp4_dist = getLineLength(*pp4, line.x, line.y)
-        if pp4_dist < min_dist:
-            min_np = self.p4
-            min_point = pp4
-            min_dist = pp4_dist
-        elif pp4_dist > max_dist:
-            max_np = self.p4
-            max_point = pp4
-            max_dist = pp4_dist
+        for p in self.points[1:]:
+            pp = App.projectPoint(*p, line)
+            pp_dist = getLineLength(*pp, line.x, line.y)
+            if pp_dist < min_dist:
+                min_np = p
+                min_point = pp
+                min_dist = pp_dist
+            elif pp_dist > max_dist:
+                max_np = p
+                max_point = pp
+                max_dist = pp_dist
 
         self.root.canvas.coords(self.projection_id, *min_point, *max_point)
         self.root.canvas.coords(self.line1, *min_np, *min_point)
