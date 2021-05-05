@@ -20,7 +20,7 @@ class App(tk.Tk):
         frame = tk.Frame(master=self)
         frame.pack(side=tk.LEFT)
 
-        label1 = tk.Label(master=frame, text='Left mouse sets the vector\nRight mouse sets projection line', width=30)
+        label1 = tk.Label(master=frame, text='Left mouse sets the square coordinates\nRight mouse sets projection line', width=30)
         label1.pack()
 
         self.text2 = tk.StringVar()
@@ -33,18 +33,14 @@ class App(tk.Tk):
 
         self.projection_line = Line(self)
         self.projection_line.setVector(0, 0, 500, 500)
-        # self.line1 = Line(self, arrow='last')
-        # self.line1.setVector(50, 300, 100, 0)
-        # self.line1_1 = Line(self, 'light gray', dash=5)
-        # self.line1_2 = Line(self, 'light gray', dash=5)
         self.line1_projection = Line(self, 'red', arrow='last')
         self.line1_projection.setStart(0, 0)
         self.square = Square(self, 'white')
+        self.square.points[:4] = [(300, 100), (400, 100), (400, 200), (300, 200)]
 
         self.refresh()
 
     def lButtonDown(self, event):
-        # self.line1.setStart(event.x, event.y)
         self.square.points[0] = (event.x, event.y)
 
     def rButtonDown(self, event):
@@ -55,7 +51,6 @@ class App(tk.Tk):
 
     def mouseMove(self, event):
         if event.state & 0x0100:
-            # self.line1.setEnd(event.x, event.y)
             (x, y) = self.square.points[0]
             dx = event.x - x
             dy = event.y - y
@@ -70,18 +65,11 @@ class App(tk.Tk):
     def refresh(self):
         self.updateSquare(self.square)
         self.updateLine(self.projection_line)
-        # self.updateLine(self.line1)
-        # self.line1_projection.setPoints(*App.projectPoint(self.line1.x, self.line1.y, self.projection_line), *App.projectPoint(self.line1.x + self.line1.dx, self.line1.y + self.line1.dy, self.projection_line))
-        # self.line1_projection.setPoints(*App.projectSquare(self.square, self.projection_line))
         self.square.project(self.projection_line)
         self.updateLine(self.line1_projection)
-        # self.line1_1.setPoints(self.line1.x, self.line1.y, self.line1_projection.x, self.line1_projection.y)
-        # self.updateLine(self.line1_1)
-        # self.line1_2.setPoints(self.line1.x + self.line1.dx, self.line1.y + self.line1.dy, self.line1_projection.x + self.line1_projection.dx, self.line1_projection.y + self.line1_projection.dy)
-        # self.updateLine(self.line1_2)
 
-        # self.text2.set(f'Line 1: ({int(self.line1.x)},{int(self.line1.y)}) <{int(self.line1.dx)},{int(self.line1.dy)}>')
-        self.text3.set(f'Projection: ({int(self.projection_line.x)},{int(self.projection_line.y)}) <{int(self.projection_line.dx)},{int(self.projection_line.dy)}>')
+        self.text2.set(f'Square: ({int(self.square.points[0][0])},{int(self.square.points[0][1])}) ({int(self.square.points[2][0])},{int(self.square.points[2][1])})')
+        self.text3.set(f'Projection: ({int(self.square.projection.x)},{int(self.square.projection.y)}) <{int(self.square.projection.dx)},{int(self.square.projection.dy)}>')
 
         self.after(15, self.refresh)
 
@@ -105,6 +93,9 @@ class App(tk.Tk):
             unpacked_points.append(p[0])
             unpacked_points.append(p[1])
         self.canvas.coords(square.id, *unpacked_points)
+        self.updateLine(self.square.projection)
+        self.updateLine(self.square.line1)
+        self.updateLine(self.square.line2)
 
 def getLineLength(x, y, x2, y2):
     return int(math.sqrt((x - x2) ** 2 + (y - y2) ** 2))
@@ -145,9 +136,9 @@ class Square(object):
         self.points.append((0, 0))
         self.root = root
         self.id = root.canvas.create_polygon(*self.points, outline=border, **kwargs)
-        self.projection_id = root.canvas.create_line(0, 0, 0, 0, fill='red', arrow='both', **kwargs)
-        self.line1 = root.canvas.create_line(0, 0, 0, 0, fill='white', dash=5)
-        self.line2 = root.canvas.create_line(0, 0, 0, 0, fill='white', dash=5)
+        self.projection = Line(root, 'red', arrow='both')
+        self.line1 = Line(root, dash=5)
+        self.line2 = Line(root, dash=5)
     def project(self, line):
         min_np = self.points[0]
         min_point = App.projectPoint(*min_np, line)
@@ -169,9 +160,9 @@ class Square(object):
                 max_point = pp
                 max_dist = pp_dist
 
-        self.root.canvas.coords(self.projection_id, *min_point, *max_point)
-        self.root.canvas.coords(self.line1, *min_np, *min_point)
-        self.root.canvas.coords(self.line2, *max_np, *max_point)
+        self.projection.setPoints(*min_point, *max_point)
+        self.line1.setPoints(*min_np, *min_point)
+        self.line2.setPoints(*max_np, *max_point)
 
 
 
