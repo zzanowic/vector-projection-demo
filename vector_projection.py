@@ -105,9 +105,6 @@ class App(tk.Tk):
             unpacked_points.append(p[0])
             unpacked_points.append(p[1])
         self.canvas.coords(square.id, *unpacked_points)
-        self.updateLine(self.square.projection)
-        self.updateLine(self.square.line1)
-        self.updateLine(self.square.line2)
 
 def getLineLength(x, y, x2, y2):
     return int(math.sqrt((x - x2) ** 2 + (y - y2) ** 2))
@@ -148,9 +145,9 @@ class Square(object):
         self.points.append((0, 0))
         self.root = root
         self.id = root.canvas.create_polygon(*self.points, outline=border, **kwargs)
-        self.projection = Line(root, 'red', arrow='both')
-        self.line1 = Line(root, dash=5)
-        self.line2 = Line(root, dash=5)
+        self.projection_id = root.canvas.create_line(0, 0, 0, 0, fill='red', arrow='both', **kwargs)
+        self.line1 = root.canvas.create_line(0, 0, 0, 0, fill='white', dash=5)
+        self.line2 = root.canvas.create_line(0, 0, 0, 0, fill='white', dash=5)
     def project(self, line):
         min_np = self.points[0]
         min_point = App.projectPoint(*min_np, line)
@@ -171,9 +168,10 @@ class Square(object):
                 max_np = p
                 max_point = pp
                 max_dist = pp_dist
-        self.projection.setPoints(*min_point, *max_point)
-        self.line1.setPoints(*min_np, *min_point)
-        self.line2.setPoints(*max_np, *max_point)
+
+        self.root.canvas.coords(self.projection_id, *min_point, *max_point)
+        self.root.canvas.coords(self.line1, *min_np, *min_point)
+        self.root.canvas.coords(self.line2, *max_np, *max_point)
 
 
 
