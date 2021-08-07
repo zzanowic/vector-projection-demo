@@ -1,2 +1,2 @@
 # vector-projection-demo
-A small python program that projects a shape only a line
+A small python program that projects a shape onto a line
